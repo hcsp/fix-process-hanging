@@ -38,11 +38,10 @@ public class Executor {
     // 2. 为什么有的时候会卡死？应该如何修复？
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                           Consumer<T> consumer,
-                                                           int numberOfThreads) throws Exception {
+                                                            Consumer<T> consumer,
+                                                            int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
         AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
-        ExecutorService threadPool = Executors.newCachedThreadPool();
 
         Thread consumerThread = new Thread(() -> {
             while (true) {
@@ -55,8 +54,6 @@ public class Executor {
                     try {
                         consumer.accept(future.get());
                     } catch (Exception e) {
-                        queue.clear();
-                        threadPool.shutdown();
                         exceptionInConsumerThread.set(e);
                         break;
                     }
@@ -64,13 +61,15 @@ public class Executor {
                     throw new RuntimeException(e);
                 }
             }
-
         });
 
         consumerThread.start();
+
+        ExecutorService threadPool = Executors.newCachedThreadPool();
         for (Callable<T> task : tasks) {
             queue.put(threadPool.submit(task));
         }
+
         queue.put((Future) PoisonPill.INSTANCE);
 
         consumerThread.join();
