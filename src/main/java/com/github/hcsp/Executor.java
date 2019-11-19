@@ -36,20 +36,6 @@ public class Executor {
     // 请回答：
     // 1. 这个方法运行的流程是怎么样的？运行的时候JVM中有几个线程？它们如何互相交互？
     // 2. 为什么有的时候会卡死？应该如何修复？
-     /*
-     * try {
-                        consumer.accept(future.get());
-                    } catch (Exception e) {
-                        exceptionInConsumerThread.set(e);
-                        break;
-                    }
-     * 执行consumer.accept(future.get())时捕获到IllegalStateException异常，然后进入cath，直接break，导致consumer线程中断。
-     * queue的容量只有numberOfThreads个，等于consumer消耗完第一个时就导致consumer线程中断。
-     * 而测试案例中tasks有三个，加上最后的PoisonPill.INSTANCE，共有四个任务，numberOfThreads只有2个。
-     * 另因为ExeuctorTest类中的超时@Timeout(5)设置导致queue.put((Future) PoisonPill.INSTANCE)时抛出InterruptedException异常。
-     *
-     * 综上主要原因是consumer.accept(future.get())时捕获到异常，然后break致consumer线程中断引起。去掉break
-     * */
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
                                                             Consumer<T> consumer,
@@ -69,7 +55,7 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
-//                        break;
+                        break;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -85,6 +71,7 @@ public class Executor {
         }
 
         queue.put((Future) PoisonPill.INSTANCE);
+
         consumerThread.join();
 
         threadPool.shutdown();
