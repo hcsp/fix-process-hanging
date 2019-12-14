@@ -55,7 +55,6 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
-                        break;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
