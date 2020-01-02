@@ -55,7 +55,6 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
-                        break;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -65,6 +64,7 @@ public class Executor {
 
         consumerThread.start();
 
+        //这一块是生产者线程的代码块，使用了线程池，且多线并行的方法
         ExecutorService threadPool = Executors.newCachedThreadPool();
         for (Callable<T> task : tasks) {
             queue.put(threadPool.submit(task));
