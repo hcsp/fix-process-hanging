@@ -73,8 +73,10 @@ public class Executor {
 
         threadPool.shutdown();
 
-        for (Exception e : exceptions) {
-            throw e;
+        if (exceptions.size() > 0) {
+            // todo 处理错误日志等
+            exceptions.forEach(System.out::println);
+            throw new IllegalStateException();
         }
     }
 
