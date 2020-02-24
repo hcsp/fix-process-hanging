@@ -1,9 +1,6 @@
 package com.github.hcsp;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -84,9 +81,10 @@ public class Executor {
         threadPool.shutdown();
 
         if (exceptionInConsumerThreads.size() > 0) {
-            Exception exception = new Exception();
-            for (Exception e : exceptionInConsumerThreads) {
-                exception.addSuppressed(e);
+            Iterator<Exception> iterator = exceptionInConsumerThreads.iterator();
+            Exception exception = iterator.next();
+            while (iterator.hasNext()) {
+                exception.addSuppressed(iterator.next());
             }
             throw exception;
         }
