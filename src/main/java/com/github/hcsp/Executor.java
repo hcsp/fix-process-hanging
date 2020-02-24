@@ -83,8 +83,12 @@ public class Executor {
 
         threadPool.shutdown();
 
-        for (Exception e : exceptionInConsumerThreads) {
-            throw e;
+        if (exceptionInConsumerThreads.size() > 0) {
+            Exception exception = new Exception();
+            for (Exception e : exceptionInConsumerThreads) {
+                exception.addSuppressed(e);
+            }
+            throw exception;
         }
     }
 
