@@ -27,9 +27,7 @@ public class Executor {
                 () -> 2,
                 () -> 3
         ), result -> {
-
             throw new IllegalStateException();
-
         }, 2);
     }
 
