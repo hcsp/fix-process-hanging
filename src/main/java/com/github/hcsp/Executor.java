@@ -2,16 +2,7 @@ package com.github.hcsp;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class Executor {
@@ -38,10 +29,10 @@ public class Executor {
     // 2. 为什么有的时候会卡死？应该如何修复？
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                            Consumer<T> consumer,
-                                                            int numberOfThreads) throws Exception {
+                                                           Consumer<T> consumer,
+                                                           int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
-        AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
+        List<Exception> exceptionInConsumerThreads = new CopyOnWriteArrayList<>();
 
         Thread consumerThread = new Thread(() -> {
             while (true) {
@@ -54,8 +45,7 @@ public class Executor {
                     try {
                         consumer.accept(future.get());
                     } catch (Exception e) {
-                        exceptionInConsumerThread.set(e);
-                        break;
+                        exceptionInConsumerThreads.add(e);
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -76,8 +66,10 @@ public class Executor {
 
         threadPool.shutdown();
 
-        if (exceptionInConsumerThread.get() != null) {
-            throw exceptionInConsumerThread.get();
+        if (!exceptionInConsumerThreads.isEmpty()) {
+            StringBuilder exMsg = new StringBuilder();
+            exceptionInConsumerThreads.forEach(e -> exMsg.append(e.getMessage()));
+            throw new IllegalStateException(exMsg.toString());
         }
     }
 
