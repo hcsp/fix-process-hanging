@@ -12,8 +12,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Executor {
     public static void main(String[] args) throws Exception {
@@ -53,8 +54,8 @@ public class Executor {
     // “毒丸”对象之前提交的所有任务都会被处理，
     // 而生产者在提交了“毒丸”对象后，将不会再提交任何任务。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                            Consumer<T> consumer,
-                                                            int numberOfThreads) throws Exception {
+                                                           Consumer<T> consumer,
+                                                           int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
         List<Exception> exceptionsInConsumerThread = new CopyOnWriteArrayList<>();
 
@@ -91,9 +92,16 @@ public class Executor {
         threadPool.shutdown();
 
         if (!exceptionsInConsumerThread.isEmpty()) {
+            StringBuilder exceptionMsg = new StringBuilder();
             for (Exception e : exceptionsInConsumerThread) {
-                throw e;
+                String msg = Arrays.stream(e.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .collect(Collectors.toList())
+                        .stream()
+                        .collect(Collectors.joining(";", "", ""));
+                exceptionMsg.append(msg);
             }
+            throw new IllegalStateException(exceptionMsg.toString());
         }
     }
 
