@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,7 +56,7 @@ public class Executor {
                                                             Consumer<T> consumer,
                                                             int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
-        AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
+        List<Exception> exceptionsInConsumerThread = new CopyOnWriteArrayList<>();
 
         Thread consumerThread = new Thread(() -> {
             while (true) {
@@ -68,8 +69,7 @@ public class Executor {
                     try {
                         consumer.accept(future.get());
                     } catch (Exception e) {
-                        exceptionInConsumerThread.set(e);
-                        //break;
+                        exceptionsInConsumerThread.add(e);
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -90,8 +90,10 @@ public class Executor {
 
         threadPool.shutdown();
 
-        if (exceptionInConsumerThread.get() != null) {
-            throw exceptionInConsumerThread.get();
+        if (!exceptionsInConsumerThread.isEmpty()) {
+            for (Exception e : exceptionsInConsumerThread) {
+                throw e;
+            }
         }
     }
 
