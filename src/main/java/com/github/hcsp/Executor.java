@@ -35,8 +35,14 @@ public class Executor {
     // 任务执行期间若抛出任何异常，则在主线程中重新抛出它
     // 请回答：
     // 1. 这个方法运行的流程是怎么样的？运行的时候JVM中有几个线程？它们如何互相交互？
+    //    答：有一个消费者，开始等待消费，主线程创建了3个Task和一个毒丸放在了阻塞队列中，两个线程从队列里拿任务执行，
+    //    执行完后消费者获取他们的返回值处理（毒丸直接跳过，如果异常记录后抛出在主线程中，exceptionInConsumerThread应该是一个集合），
+    //    然后关闭任务线程。
     // 2. 为什么有的时候会卡死？应该如何修复？
+    //    答：exceptionTest卡死的原因是因为消费者在处理多个线程任务时，碰到异常就break终止处理task了，
+    //    导致阻塞队列里的Task一直剩余2，生产者向任务队列里丢东西就会被阻塞。
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
+    //    答：毒丸策略，一般用来让消息队列的工作停下来
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
                                                             Consumer<T> consumer,
                                                             int numberOfThreads) throws Exception {
@@ -55,7 +61,7 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
-                        break;
+                        // break;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
