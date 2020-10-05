@@ -16,11 +16,11 @@ import java.util.function.Consumer;
 
 public class Executor {
     public static void main(String[] args) throws Exception {
-        runInParallelButConsumeInSerial(Arrays.asList(
+        /*runInParallelButConsumeInSerial(Arrays.asList(
                 () -> 1,
                 () -> 2,
                 () -> 3
-        ), System.out::println, 2);
+        ), System.out::println, 2);*/
 
         runInParallelButConsumeInSerial(Arrays.asList(
                 () -> 1,
@@ -38,8 +38,8 @@ public class Executor {
     // 2. 为什么有的时候会卡死？应该如何修复？
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                            Consumer<T> consumer,
-                                                            int numberOfThreads) throws Exception {
+                                                           Consumer<T> consumer,
+                                                           int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
         AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
 
@@ -55,6 +55,8 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
+                        // 如果抛出异常 需要将队列置空
+                        queue.clear();
                         break;
                     }
                 } catch (InterruptedException e) {
@@ -71,11 +73,8 @@ public class Executor {
         }
 
         queue.put((Future) PoisonPill.INSTANCE);
-
         consumerThread.join();
-
         threadPool.shutdown();
-
         if (exceptionInConsumerThread.get() != null) {
             throw exceptionInConsumerThread.get();
         }
@@ -96,16 +95,17 @@ public class Executor {
 
         @Override
         public boolean isDone() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("11");
         }
 
         @Override
         public Object get() throws InterruptedException, ExecutionException {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("22");
         }
 
         @Override
-        public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException,
+                TimeoutException {
             throw new UnsupportedOperationException();
         }
     }
