@@ -16,11 +16,11 @@ import java.util.function.Consumer;
 
 public class Executor {
     public static void main(String[] args) throws Exception {
-        runInParallelButConsumeInSerial(Arrays.asList(
+        /*runInParallelButConsumeInSerial(Arrays.asList(
                 () -> 1,
                 () -> 2,
                 () -> 3
-        ), System.out::println, 2);
+        ), System.out::println, 2);*/
 
         runInParallelButConsumeInSerial(Arrays.asList(
                 () -> 1,
@@ -55,9 +55,12 @@ public class Executor {
                         consumer.accept(future.get());
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
+                        // 如果抛出异常 需要将队列置空
+                        queue.clear();
                         break;
                     }
                 } catch (InterruptedException e) {
+                    System.out.println(Thread.currentThread().getName()+"c");
                     throw new RuntimeException(e);
                 }
             }
@@ -71,11 +74,8 @@ public class Executor {
         }
 
         queue.put((Future) PoisonPill.INSTANCE);
-
         consumerThread.join();
-
         threadPool.shutdown();
-
         if (exceptionInConsumerThread.get() != null) {
             throw exceptionInConsumerThread.get();
         }
@@ -96,12 +96,12 @@ public class Executor {
 
         @Override
         public boolean isDone() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("11");
         }
 
         @Override
         public Object get() throws InterruptedException, ExecutionException {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("22");
         }
 
         @Override
