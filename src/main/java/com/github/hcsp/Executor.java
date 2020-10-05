@@ -38,8 +38,8 @@ public class Executor {
     // 2. 为什么有的时候会卡死？应该如何修复？
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。
     public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                            Consumer<T> consumer,
-                                                            int numberOfThreads) throws Exception {
+                                                           Consumer<T> consumer,
+                                                           int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
         AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
 
@@ -60,7 +60,6 @@ public class Executor {
                         break;
                     }
                 } catch (InterruptedException e) {
-                    System.out.println(Thread.currentThread().getName()+"c");
                     throw new RuntimeException(e);
                 }
             }
@@ -105,7 +104,8 @@ public class Executor {
         }
 
         @Override
-        public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException,
+                TimeoutException {
             throw new UnsupportedOperationException();
         }
     }
