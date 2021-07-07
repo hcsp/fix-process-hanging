@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class ExeuctorTest {
+public class ExecutorTest {
     @Test
     @Timeout(5)
     public void runInParallelButConsumeInSerialTest() throws Exception {
