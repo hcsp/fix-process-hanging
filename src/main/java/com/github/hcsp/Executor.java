@@ -30,7 +30,6 @@ public class Executor {
             throw new IllegalStateException();
         }, 3);
     }
-
     // 并发执行tasks参数所指定的任务，并将任务的结果交给consumer线程串行处理
     // 任务执行期间若抛出任何异常，则在主线程中重新抛出它
     // 请回答：
@@ -52,10 +51,9 @@ public class Executor {
     //          没有了消费者，BlockQueue 继续 put，一个有3个 Callable，3个 Callable 之后，BlockQueue 已
     //          经满了，此时再次 put 则会 wait，如同卡死
     //          BlockingQueue 满了，此时在等待消费
+    //    修复方法：如果 consumerThread 遇到错误不 break，继续 poll，但是不消费
     // 3. PoisonPill是什么东西？如果不懂的话可以搜索一下。 => Poison Pill is known predefined data item that allows to provide graceful shutdown for separate distributed consumption process.
-    public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks,
-                                                           Consumer<T> consumer,
-                                                           int numberOfThreads) throws Exception {
+    public static <T> void runInParallelButConsumeInSerial(List<Callable<T>> tasks, Consumer<T> consumer, int numberOfThreads) throws Exception {
         BlockingQueue<Future<T>> queue = new LinkedBlockingQueue<>(numberOfThreads);
         AtomicReference<Exception> exceptionInConsumerThread = new AtomicReference<>();
 
@@ -68,10 +66,11 @@ public class Executor {
                     }
 
                     try {
-                        consumer.accept(future.get());
+                        if (exceptionInConsumerThread.get() == null) {
+                            consumer.accept(future.get());
+                        }
                     } catch (Exception e) {
                         exceptionInConsumerThread.set(e);
-                        break;
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
